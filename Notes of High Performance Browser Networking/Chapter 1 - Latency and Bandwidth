@@ -1,0 +1,60 @@
+# Latency and Bandwidth
+
+## Speed Is a Feature
+* Faster sites lead to better user engagement
+* Faster sites lead to better user retention
+* Faster sites lead to higher conversions
+
+Latency - time from source sending a packet to destination receiving it
+Bandwidth - Maximum throughput of a logical or physical communication path
+
+Propagation delay - amount of time required for a message to travel from the sender to receiver, which is a function of distance over speed with which the signal propagates.
+
+Transmission delay - amount of time required to process the packet header, check for bit-level errors, and determine the packet's destination.
+
+Queuing delay - amount of time the packet is waiting in the queue until it can be processed.
+
+Total latency between client and server is the sum of all the delays.
+
+## Speed of Light and Propagation Latency
+There are some hard limits such as the speed of light. Our packets travel through copper wire or a fiber-optic cable. This ratio of speed of light and speed with which the packet travels in a material is called refractive index of the material.
+
+Larger value, the slower light travels in that medium.
+
+NY to SF      RTT is about 42 ms
+NY to London  RTT is about 56 ms
+NY to Sydney  RTT is about 160 ms
+
+To succeed, network latency has to be carefully managed and be an explicit design criteria at all stages of development
+
+
+CDN (Content delivery network)
+serves international content from a nearby location to the client, enables us to significantly reduce propagation time of all data packets.
+
+## Last-Mile Latency
+Last few miles tends to have the most latency: infamous last-mile problem.
+
+ex: traceroute google.com 
+
+Latency is the performance bottleneck for most websites.
+
+## Bandwidth in Core Networks
+The total bandwidth of a fiber link is the multiple of per-channel data rate and the number of multiplexed channels.
+
+As of early 2010, researchers have been able to multiplex over 400 wavelengths with peak capacity of 171 Gbit/s per channel, which translates to over 70 Tbit/s of total bandwidth for a single fiber link.
+
+While high-bandwidth link to ISP is desirable, it isn't a guarantee of end-to-end performance
+  - The network could be congested at any intermediate node due to high demand, hardware failures, a concentrated network attack
+
+## Delivering Higher Bandwidth and Lower Latencies
+Multiple strategies to grow available capacity:
+  - add more fibers into our fiber-optic links
+  - deploy more links across congest routes
+  - improve WDM techniques to transfer more data through existing links
+
+Improving latency:
+  - better materials with lower refractive index
+  - faster routers
+  - speed of light places hard limit on minimum latency
+  - make distance shorter (CDN)
+  - build applications that can hide latency through caching, pre-fetching, and a variety of similar techniques

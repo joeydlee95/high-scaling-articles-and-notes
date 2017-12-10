@@ -4,7 +4,6 @@ The primary goal of this repository is to maintain a gathering of information an
 
 ## Motivation
 [shashank88's system design interview prep](https://github.com/shashank88/system_design)
-[High Performance Browser Network](https://hpbn.co/)
 
 TODO: The organization of folders will have to be determined as I learn and should be standardized when I have gathered enough variety of sources and information. 
 
