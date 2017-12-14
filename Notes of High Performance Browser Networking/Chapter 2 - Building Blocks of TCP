@@ -1,0 +1,165 @@
+# Building Blocks of TCP
+
+Two important protocols, IP and TCP
+1. IP (Internet Protocol) - provides host-to-host routing and addressing, RFC 791
+2. TCP (Transmission Control Protocol) - provides abstraction of reliable network running over an unreliable channel, RFC 793
+
+When you work with TCP stream
++ guaranteed that all bytes sent 
++ will be identical with bytes received and ordered
++ accurate delivery
+- timely
+
+Understanding core mechanism of TCP is essential knowledge to build an optimized web experience
+
+## Three-Way Handshake
+`SYN` - Client picks a sequence number x and sends a SYN packet, may also include additional TCP flags and options
+
+`SYN/ACK` - Server increments x by one, picks its own sequence number y, appends its own set of flags and options and sends to client
+
+`ACK` - Client increments both x and y by one and completes handshake
+
+An TCP connection over a fiber link, will take a minimum of 56 ms, 28 ms to propagate packets in one direction
+
+CRITICAL ENHANCEMENT: connection reuse
+
+### TCP Fast Open
+Loading a webpage may require hundreds of resources and may require the browser to establish many tcp connections
+  - each with TCP handshake overhead
+
+TCP Fast Open aims to eliminate the latency penalty by allowing data transfer within SYN packet.
+  - limitations:
+      limits on max size of data payload in SYN packet
+      only certain HTTP requests can be sent
+      only works for repeat connections due to crypto cookie
+
+## Congestion Avoidance and Control
+"... Should the roundtrip time exceed the maximum retransmission interval for any host, that host will begin to introduce more and more copies of the same datagrams into the net." - John Nagle, RFC 896 on congestion collapse
+
+Multiple mechnisms were implemented in TCP to govern rate with which the data can be handled: [flow control](#flowcontrol), congestion control, and [congestion avoidance](#congestionavoidance).
+
+## Flow Control
+The mechanism to prevent sender from over sending data to receiver. (receiver may be under heavy load)
+
+Each side of TCP connection advertises its own rwnd (receive window), communicating available buffer space.
+
+## Slow Start
+There was no mechanism to prevent either side from overwhelming the network.
+
+Start of an exchange of data after final ACK:
+  - the server intializes a new cwnd (congestion window) variable per TCP connection
+  - sets its initial value to a system-specified value
+
+cwnd value is not advertised or exchanged
+
+Time to reach the cwnd size of size N:
+  Time = RTT * [log_2 (1+ N/initial cwnd)]
+
+At times:
+  - for many HTTP connections, data transfer is finished before the maximum window size is reached
+  - performance of apps is limited by roundtrip time (RTT) between server and client
+  - slow-start limits available bandwidth throughput, an effect on performance of small transfers
+
+## Congestion Avoidance
+TCP is designed to use packet loss as feedback mechanism to help regulate its performance: not if, but when.
+
+The moment packet is lost, congestion avoidance algorithm kicks in.
+  * Assumption is that packet loss is indicative of network congestion
+
+Many techniques but current popular ones are:
+  1. TCP Tahoe and Reno (original)
+  2. TCP Vegas
+  3. TCP new Reno
+  4. TCP BIC
+  5. TCP Cubic (default on Linux)
+  6. Compound TCP (default on Windows)
+
+### Proportional Rate Reduction For TCP
+What is the optimal way to recover packet loss?
+- Too aggressive = lost packet has significant impact on throughput of entire connection
+- Too slow = induce more packet loss
+
+Past: TCP used Multiplicative Decrease and Additive Increase (AIMD)
+  1. When packet lost
+  2. halve congestion window size
+  3. Slowly increase the window by fixed amount per roundtrip
+
+New: Proportional Rate Reduction (PRR) RFC 6937
+  * the goal is to improve speed of recovery when packet lost.
+  * 3-10% reduction in average latency for connections with packet loss.
+  * Now default on Linux 3.2+ kernels
+
+## Bandwidth-Delay Product
+Optimal sender and receiver window sizes must vary based on RTT and target data rate between them.
+
+Max amount of unacked in-flight data between sender and receiver = the minimum of rwnd and cwnd
+* rwnd is communicated with every ACK
+* congestion window is dynamically adjusted by sender based on congestion control and avoidance algorithm
+
+Bandwidth-delay Product = product of data link's capacity and its end-to-end delay. Result is the maximum aount of unacked data that can be in flight at any time.
+
+When your connection is transmitting at a fraction of available bandwidth, even when you know that both client and server are capable of higher rates, it is likely due to a small window size
+  - a saturated peer advertising low rwnd
+  - bad network weather
+  - high packet loss resetting cnwd
+  - explicit traffic shaping that could be applied to limit throughput
+
+## Head-of-Line Blocking
+Every TCP packet carries a unique sequence number when put on the wire and data must be passed to receiver in-order.
+
+* When one packet is lost, all subsequent packets must be held in receiver's TCP buffer until lost packet is retransmitted and arrives, called TCP HOL blocking
+
+### Packet Loss is OK
+Packet loss is necessary to get best performance from TCP
+
+* a dropped packet act is feedback mechanism, allowing receiver and sender to adjust their sending rates to avoid 
+1. overwhelming the network
+2. minimize latency (Bufferbloat in local router)
+
+## Optimizing for TCP
+TCP is fair for all network peers
+
+To optimize TCP:
+1. tune how TCP senses the current network conditions
+2. adapts its behavior based on type and requirements of layers below and above
+
+Additional Mechanisms
+* Selective acknowledgements (SACK)
+* Delayed Acknowledgements and Fast Retransmit
+* And More
+
+Core principles:
+1. TCP 3-way handshake introduce a full roundtrip of latency
+2. Slow start is applied to every new connection
+3. Flow and congestion control regulate throughput of all connections
+4. Throughput is regulated by current cwnd
+
+### Tuning Server Configuration
+With the latest kernel in place: 
+1. Increasing TCP's initial cwnd - a larger starting cwnd allows TCP to transfer more data in the first roundtrip and significantly accelerate window growth
+2. Slow-start restart - disabling slow-start after idle will improve performance of long-lived TCP connections that transfer data in periodic bursts
+3. Window Scaling (RFC 1323) - Enabling window scaling increases the maximum receive window size and allows high-latency connections to achieve better throughput
+4. TCP Fast Open - allows application data to be sent in the initial SYN packet in certain situations. 
+
+For linux users:
+1. ss is a tool to inspect various statistics for open sockets
+run `ss --options --extended --memory --processes --info` to see current peers and their respective connection settings.
+
+### Tuning Application Behavior
+How an application uses each new connection can have a greater impact:
+1. No bit is faster than one not sent: send fewer bits
+2. limit to how fast bits are sent, but bits can be closer (CDN)
+3. TCP connection reuse is critical to improve performance
+4. eliminate unnecessary data transfers
+
+## Performance Checklist
+[] Upgrade server kernel to latest version
+[] Ensure cwnd size is 10
+[] Enable window scaling
+[] Disable slow-start after idle
+[] Enable TCP Fast Open
+[] Eliminate redundant data transfer
+[] Compress transferred data
+[] Position servers closer to reduce RTT
+[] Reuse TCP connections whenever possible
+[] Look at [TCP Tuning for HTTP](https://tools.ietf.org/html/draft-stenberg-httpbis-tcp-03)
