@@ -5,8 +5,13 @@ The primary goal of this repository is to maintain a gathering of information an
 ## Motivation
 [shashank88's system design interview prep](https://github.com/shashank88/system_design)
 
-TODO: The organization of folders will have to be determined as I learn and should be standardized when I have gathered enough variety of sources and information. 
+## Videos To Watch
+Links and quick overview.
 
+[David Malan on Scalability](https://www.youtube.com/watch?v=-W9F__D3oY4)
+* A very dense introduction to scalable infrastructure preventing "Single Point of Failure" and with mentions of firewall security, "Least Privilege".
+
+TODO: The organization of folders will have to be determined as I learn and should be standardized when I have gathered enough variety of sources and information. 
 TODO: contributing
 TODO: license
 TODO: a website version of this repository.
